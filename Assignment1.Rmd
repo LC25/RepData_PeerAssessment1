@@ -1,0 +1,99 @@
+Reproducible Research Assignment 1 - Quantifiable Self
+========================================================
+
+## Loading and preprocessing the data
+
+```{r, echo=TRUE}
+data <- read.csv("activity.csv", header=T)       ## Reading in the data
+str(data)
+data$date <- as.Date(data$date)                  ## Convert variable into class "Date"
+```
+
+## What is mean total number of steps taken per day?
+
+Aggregating the data to total steps per day, while ignoring the missing values: 
+```{r, echo=TRUE}
+totalsteps <- aggregate(data$steps, by=list(date=data$date), sum)
+colnames(totalsteps) <- c("date", "totalsteps")
+head(totalsteps)
+```
+
+Making a histogram of the total number of steps taken each day: 
+
+```{r, echo=T, fig.width=10}
+library(ggplot2)
+qplot(totalsteps, data=totalsteps)+geom_histogram(fill="grey", color="black")+labs(title="Total Number of Steps Taken per Day", x="Steps per Day", y="Frequency")
+```
+
+Calculate the **mean** total number of steps taken per day: 
+```{r, echo=TRUE}
+mean(totalsteps$totalsteps, na.rm=T)
+```
+The mean of total number of steps per day is `r mean(totalsteps$totalsteps, na.rm=T)`. 
+
+And the **median** total number of steps taken per day: 
+```{r, echo=TRUE}
+median(totalsteps$totalsteps, na.rm=T)
+```
+The median is `r median(totalsteps$totalsteps, na.rm=T)`. 
+
+## What is the average daily activity pattern?
+
+Make a time series plot:
+```{r, echo=TRUE, fig.width=10}
+library(plyr)
+totalstepsinterval <- ddply(data, .(interval), summarise, mean_steps=mean(steps, na.rm=TRUE))
+head(totalstepsinterval)
+plot(totalstepsinterval, type="l", main="Average number of steps taken per 5-minute interval", xlab="5-minute intervals", ylab="Average number of steps (across all days)")
+```
+
+Display the 5-minute interval that contains the maximum number of steps: 
+```{r, echo=TRUE}
+max <- totalstepsinterval[which.max(totalstepsinterval$mean_steps),]
+max 
+```
+The maximum number of steps are in the `r max[,1]`th interval. 
+
+
+## Imputing missing values
+
+Report the total number of missing values in the dataset: 
+```{r, echo=TRUE}
+sum(is.na(data$steps))
+```
+There are `r sum(is.na(data$steps))` rows with missing values. 
+
+The imputation method chosen here is to replace the missing value by the average steps taken that day. 
+```{r, echo=TRUE}
+data_imputed <- data
+data_imputed$steps[is.na(data_imputed$steps)]=mean(data_imputed$steps, by=list(interval), na.rm=TRUE)
+data_imputed$steps[is.na(data_imputed$steps)] <- tapply(data$steps, data$interval, mean, na.rm=T)
+#data_imputation <- merge(data_imputed, totalstepsinterval, by.x="interval", by.y="interval")
+#head(data_imputation)
+#data_imputation[is.na(data_imputation$steps),]$steps <- data_imputation[is.na(data_imputation$steps), 4]
+#meanday <- ddply(data_imputed, .(date), summarise, mean_stepsday=mean(steps, na.rm=TRUE))
+
+#data_imputed$steps[is.na(data$steps)] <- totalstepsinterval
+#if(is.na(data$steps)==TRUE) {data$steps <- meanday}
+totalsteps_imputed <- aggregate(data_imputed$steps, by=list(date=data_imputed$date), sum)
+colnames(totalsteps_imputed) <- c("date", "totalsteps")
+#head(totalsteps_imputed)
+qplot(totalsteps, data=totalsteps_imputed)+geom_histogram(fill="grey", color="black")+labs(title="Total Number of Steps Taken per Day", x="Steps per Day", y="Frequency")
+qplot(totalsteps_imputed, data=totalsteps_imputed)+geom_histogram(fill="grey", color="black")+labs(title="Total Number of Steps Taken per Day", x="Steps per Day", y="Frequency")
+
+
+#df = data.frame(x = 1:20, y = c(1:10,rep(NA,10)))
+#df$y[is.na(df$y)] = mean(df$y, na.rm=TRUE)
+```
+
+Calculate the **mean** total number of steps taken per day: 
+```{r, echo=TRUE}
+mean(totalsteps_imputed$totalsteps, na.rm=T)
+```
+The mean of total number of steps per day is `r mean(totalsteps_imputed$totalsteps, na.rm=T)`. 
+
+And the **median** total number of steps taken per day: 
+```{r, echo=TRUE}
+median(totalsteps_imputed$totalsteps, na.rm=T)
+```
+The median is `r median(totalsteps_imputed$totalsteps, na.rm=T)`
